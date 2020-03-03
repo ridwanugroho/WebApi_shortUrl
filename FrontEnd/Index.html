@@ -116,8 +116,7 @@
         };
 
         var jsn = JSON.stringify(data);
-        console.log(jsn);
-        
+
         $.ajax({
             url: apiUrl,
             type: 'post',
@@ -126,18 +125,22 @@
             data: jsn,
 
             success: function (data) {
-                console.log(data);
-                var res_label = '<br><br><span class="text-2xl">Short Url</span><br>';
-                var result = '<input id="url" name="url" type="text" class="my-5 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500" value="'+ 
-                data.randomUrl+  '" readonly>';
+              console.log(data);
 
-                $('#form-input').append(res_label);
-                $('#form-input').append(result);
+              var res_label = '<br><br><span class="text-2xl">Short Url</span><br>';
+              var result = '<input id="url" name="url" type="text" class="my-5 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500" value="'+ 
+              data.shortUrl+  '" readonly>';
+
+              $('#form-input').append(res_label);
+              $('#form-input').append(result);
             },
-            error: function (xhRequest, ErrorText, thrownError) {
-              console.log('xhRequest: ' + xhRequest + "\n");
-              console.log('ErrorText: ' + ErrorText + "\n");
-              console.log('thrownError: ' + thrownError + "\n");
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
+              var res_label = '<br><br><span class="text-2xl">Short Url Exist!</span><br>';
+              var result = '<input id="url" name="url" type="text" class="my-5 bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500" value="'+ 
+              XMLHttpRequest.responseText+  '" readonly>';
+
+              $('#form-input').append(res_label);
+              $('#form-input').append(result);
             }
         });
     }

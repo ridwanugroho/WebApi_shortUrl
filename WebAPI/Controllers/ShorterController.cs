@@ -17,11 +17,6 @@ namespace WebAPI.Controllers
     public class ShorterController : ControllerBase
     {
         private AppDbContext db;
-        private object ERR = new
-        {
-            status = "400",
-            message = "bad request"
-        };
 
         public ShorterController(AppDbContext db)
         {
@@ -37,13 +32,22 @@ namespace WebAPI.Controllers
         [HttpPost("GenerateRandom")]
         public IActionResult GenerateRandom(Url model)
         {
-            Console.WriteLine("mencoba . . .");
-            Console.WriteLine(model.OriginalUrl);
+            if(!validateOriginalUrl(model.OriginalUrl))
+            {
+                var _url = (from u in db.Url where u.OriginalUrl == model.OriginalUrl select u).First();
+                var existUrl = "https://192.168.17.108:5001/" + _url.shortUrl;
+
+                return BadRequest(existUrl);
+            }
 
             int ln = new Random().Next(4, 7);
             var randomUrl = "https://192.168.17.108:5001/" + generateRandom(ln, model.OriginalUrl);
 
-            return Ok(new { randomUrl = randomUrl });
+            return Ok(new 
+            {
+                status = 200,
+                shortUrl = randomUrl 
+            });
         }
 
         [HttpPost("GenerateCustom")]
