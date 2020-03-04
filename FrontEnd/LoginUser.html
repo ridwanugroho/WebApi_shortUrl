@@ -47,8 +47,9 @@
     $(document).ready(function(){
         if(Cookies.get('token') == null)
             window.location.href = 'http://localhost:8080';
-
-        getUser();
+            
+        else
+            getUser();
     });
 
     function getUser(){
@@ -67,6 +68,8 @@
             $('#welcome').html('Welcome, ' + data.username);
             $('#login-logout').empty();
             var logout = '<a href="javascript: Logout()" class="modal-open inline-block text-sm px-4 py-2 leading-none border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white mt-4 lg:mt-0">Logout</a>';
+            $('#login-logout').append(logout);
+
         }).catch(function(err){
             console.log(err);
             window.location.href = 'http://localhost:8080';

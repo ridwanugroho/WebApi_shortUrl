@@ -5,54 +5,181 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <script src="node_modules/chart.js/dist/Chart.min.js"></script>
+    <link href="css/tailwind.min.css" rel="stylesheet">
+    <script src="js/jquery-3.4.1.js"></script>
+    <script src="js/js.cookie.min.js"></script>
     <title>Document</title>
 </head>
 <body>
-    <canvas id="myChart" width="400" height="400"></canvas>
+    <div id="url-list">
+        <table class="table-fixed">
+            <thead>
+              <tr>
+                <th class="w-1/5 px-4 py-2">No</th>
+                <th class="w-1/2 px-4 py-2">Short Url</th>
+                <th class="w-1/2 px-4 py-2">Original Url</th>
+              </tr>
+            </thead>
+            <tbody id="t-ip-body">
+              
+            </tbody>
+          </table>
+    </div>
+    <div id="statistics-detail">
+        <div id="statistic-info">
+
+        </div>
+        <div id="statistic-graph" class="w-1/2">
+            <canvas id="myChart" width="400" height="100"></canvas>
+        </div>
+    </div>
     
 </body>
 </html>
 
 <script>
+var DetailData;
 
-var ctx = document.getElementById('myChart').getContext('2d');
-var myChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-        datasets: [{
-            label: '# of Votes',
-            data: [12, 19, 3, 5, 2, 3],
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.2)',
-                'rgba(54, 162, 235, 0.2)',
-                'rgba(255, 206, 86, 0.2)',
-                'rgba(75, 192, 192, 0.2)',
-                'rgba(153, 102, 255, 0.2)',
-                'rgba(255, 159, 64, 0.2)'
-            ],
-            borderColor: [
-                'rgba(255, 99, 132, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)'
-            ],
-            borderWidth: 1
-        }]
-    },
-    options: {
-        scales: {
-            yAxes: [{
-                ticks: {
-                    beginAtZero: true
-                }
+$(document).ready(function(){
+    $.ajax({
+            url: 'https://192.168.17.108:5001/api/statistic',
+            type: 'get',
+            dataType: 'json',
+        }).done(function(data){
+            console.log(data);
+
+            for(i=0; i<data.length; i++){
+                var shortUrl = '<a href="javascript: generateDetail(\''+data[i].shortUrl+'\')">'+ data[i].shortUrl +'</a>';
+                var tableContent = '<tr>'+
+                    '<td class="border px-4 py-2">'+ i +'</td>'+
+                    '<td class="border px-4 py-2">'+ shortUrl +'</td>'+
+                    '<td class="border px-4 py-2">'+ data[i].originalUrl +'</td>'+
+                  '</tr>';
+                
+                  $('#t-ip-body').append(tableContent);
+            }
+              
+        }).catch(function(err){
+            console.log(err);
+            //window.location.href = 'http://localhost:8080';
+        });
+})
+
+function generateDetail(ID){
+    $.ajax({
+        url: 'https://192.168.17.108:5001/api/statistic/'+ID,
+            type: 'get',
+            dataType: 'json',
+        }).done(function(data){
+            console.log(data);
+            DetailData = data;
+            $('#statistic-info').empty();
+            $('#statistic-graph').empty();
+            
+            generateInfo(data.click);
+            generateGraph(data.byDate.label, data.byDate.value);
+
+        }).catch(function(err){
+            console.log(err);
+            //window.location.href = 'http://localhost:8080';
+        });
+}
+
+function generateInfo(data){
+    var infos = `<table class="table-fixed">
+            <thead>
+              <tr>
+                <th class="w-1/5 px-4 py-2">No</th>
+                <th class="w-1/2 px-4 py-2">Origin</th>
+                <th class="w-1/2 px-4 py-2">Access</th>
+              </tr>
+            </thead>
+            <tbody id="t-stat-detail-body">
+              
+            </tbody>
+          </table>`;
+
+    $('#statistic-info').append(infos);
+
+    for(i=0; i<data.length; i++){
+        var tableContent = '<tr>'+
+                            '<td class="border px-4 py-2">'+ i +'</td>'+
+                            '<td class="border px-4 py-2">'+ data[i].ip +'</td>'+
+                            '<td class="border px-4 py-2">'+ data[i].count +'</td>'+
+                            '</tr>';
+        
+        $('#t-stat-detail-body').append(tableContent);                 
+    }
+
+    var dropdownSelect = `<select id="graph-select">
+                            <option value="day">By Day</option>
+                            <option value="month">By Month</option>
+                            <option value="year">By Year</option>
+                        </select>
+                        <button onclick="setGraph()" type="button" class="modal-open shadow bg-purple-500 hover:bg-purple-400 focus:shadow-outline focus:outline-none text-white font-bold py-2 px-4 rounded">Set</button>`;
+
+    $('#statistic-info').append(dropdownSelect);
+}
+
+function setGraph(){
+    var graphSel = $('#graph-select').val();
+    $('#statistic-graph').empty();
+    switch (graphSel) {
+        case "day":
+            generateGraph(DetailData.byDate.label, DetailData.byDate.value);
+            break;
+
+        case "month":
+            generateGraph(DetailData.byMonth.label, DetailData.byMonth.value);
+            break;
+
+        case "year":
+            generateGraph(DetailData.byYear.label, DetailData.byYear.value);
+            break;
+    }
+}
+
+function generateGraph(label, value){
+    $('#statistic-graph').append('<canvas id="myChart" width="400" height="200"></canvas>');
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: label,
+            datasets: [{
+                label: '# Accessed',
+                data: value,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
             }]
         },
-        tooltips: {
-            mode: 'index'
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }]
+            },
+            tooltips: {
+                mode: 'index'
+            }
         }
-    }
-});
+    });
+}
 </script>
