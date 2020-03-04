@@ -2,6 +2,7 @@
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +10,7 @@ using Newtonsoft.Json;
 
 using WebAPI.Models;
 using WebAPI.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WebAPI.Controllers
 {
@@ -32,65 +34,59 @@ namespace WebAPI.Controllers
         [HttpPost("GenerateRandom")]
         public IActionResult GenerateRandom(Url model)
         {
-            if(!validateOriginalUrl(model.OriginalUrl))
+            var validateOriUrl = validateOriginalUrl(model.OriginalUrl);
+            if (validateOriUrl != "")
             {
-                var _url = (from u in db.Url where u.OriginalUrl == model.OriginalUrl select u).First();
-                var existUrl = "https://192.168.17.108:5001/" + _url.shortUrl;
+                var existUrl = "https://192.168.17.108:5001/" + validateOriUrl;
 
                 return BadRequest(existUrl);
             }
 
             int ln = new Random().Next(4, 7);
-            var randomUrl = "https://192.168.17.108:5001/" + generateRandom(ln, model.OriginalUrl);
+            var randomUrl = generateRandom(ln, model.OriginalUrl);
+
+            var urlToSave = new Url
+            {
+                Title = model.OriginalUrl,
+                OriginalUrl = model.OriginalUrl,
+                shortUrl = randomUrl,
+                CreatedAt = DateTime.Now
+            };
+
+            db.Url.Add(urlToSave);
+            db.SaveChanges();
 
             return Ok(new 
             {
                 status = 200,
-                shortUrl = randomUrl 
+                shortUrl = "https://192.168.17.108:5001/" + randomUrl 
             });
         }
 
+        [Authorize]
         [HttpPost("GenerateCustom")]
         public IActionResult GenerateCustom(Url url)
         {
-            if(!validateOriginalUrl(url.OriginalUrl))
-            {
-                var _url = (from u in db.Url where u.OriginalUrl == url.OriginalUrl select u).First();
+            var validateOriUrl = validateOriginalUrl(url.OriginalUrl);
+            if (validateOriUrl != "")
+                return BadRequest("https://192.168.17.108:5001/" + validateOriUrl);
 
-                var ret = new ShortUrl
-                {
-                    Status = "400",
-                    shortUrl = _url.shortUrl,
-                    OriginalUrl = url.OriginalUrl,
-                    Message = "Original url telah ada"
-                };
-
-                return Ok(ret);
-            }
-
-            if (!validateShortUrl(url.shortUrl))
-            {
-                var _url = (from u in db.Url where u.shortUrl == url.shortUrl select u).First();
-
-                var ret = new ShortUrl
-                {
-                    Status = "400",
-                    shortUrl = "",
-                    OriginalUrl = url.OriginalUrl,
-                    Message = "Short url telah digunakan"
-                };
-
-                return Ok(ret);
-            }
+            var validateSrtUrl = validateShortUrl(url.shortUrl);
+            if (validateSrtUrl != "")
+                return BadRequest("Short URL already in use!");
 
             else
             {
+                var token = Request.Headers["Authorization"];
+                token = token.ToString().Substring(7);
+
                 var _url = new Url
                 {
                     Title = url.OriginalUrl,
                     shortUrl = url.shortUrl,
                     OriginalUrl = url.OriginalUrl,
                     CreatedAt = DateTime.Now,
+                    Owner = GetUserByToken(token)
                 };
 
                 db.Url.Add(_url);
@@ -114,24 +110,36 @@ namespace WebAPI.Controllers
             return result.ToString();
         }
 
-        private bool validateShortUrl(string url)
+        private string validateShortUrl(string url)
         {
-            var urls = from u in db.Url select u.shortUrl;
+            var urls = from u in db.Url where u.shortUrl == url select u.shortUrl;
 
-            if (urls.Contains(url))
-                return false;
+            if (urls.Count() > 0)
+                return urls.First();
 
-            return true;
+            return "";
         }
 
-        private bool validateOriginalUrl(string url)
+        private string validateOriginalUrl(string url)
         {
-            var urls = from u in db.Url select u.OriginalUrl;
+            Console.WriteLine("Checking for original url : {0}", url);
 
-            if (urls.Contains(url))
-                return false;
+            var urls = from u in db.Url where u.OriginalUrl == url select u.shortUrl;
 
-            return true;
+            if (urls.Count() > 0)
+                return urls.First();
+
+            return "";
+        }
+
+        public User GetUserByToken(string token)
+        {
+            var jwtSecrTokenHandler = new JwtSecurityTokenHandler();
+            var secrToken = jwtSecrTokenHandler.ReadToken(token) as JwtSecurityToken;
+
+            var userId = secrToken?.Claims.First(claim => claim.Type == "sub").Value;
+
+            return db.User.Find(Guid.Parse(userId));
         }
     }
 }

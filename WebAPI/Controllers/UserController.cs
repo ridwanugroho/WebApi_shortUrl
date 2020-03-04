@@ -44,7 +44,10 @@ namespace WebAPI.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            return Ok("okok user");
+            var token = Request.Headers["Authorization"];
+            token = token.ToString().Substring(7);
+
+            return Ok(GetUserByToken(token));
         }
 
         [HttpPost("Login")]
@@ -54,17 +57,19 @@ namespace WebAPI.Controllers
 
             if (user != null)
             {
+                var token = generateJwtToken(user);
                 var ret = new
                 {
                     status = 200,
-                    user = user
+                    user = user,
+                    token = token
                 };
 
                 return Ok(ret);
             }
 
             else
-                return Ok(ERR);
+                return BadRequest("Username/Email or password wrong!");
         }
 
         [HttpPost("register")]
@@ -151,6 +156,16 @@ namespace WebAPI.Controllers
             var encodedToken = new JwtSecurityTokenHandler().WriteToken(token);
 
             return encodedToken;
+        }
+
+        public User GetUserByToken(string token)
+        {
+            var jwtSecrTokenHandler = new JwtSecurityTokenHandler();
+            var secrToken = jwtSecrTokenHandler.ReadToken(token) as JwtSecurityToken;
+
+            var userId = secrToken?.Claims.First(claim => claim.Type == "sub").Value;
+
+            return db.User.Find(Guid.Parse(userId));
         }
     }
 }
