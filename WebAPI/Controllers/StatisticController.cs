@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 using WebAPI.Models;
 using WebAPI.Data;
@@ -30,7 +32,7 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("{url}")]
-        public IActionResult Url(string url)
+        public new IActionResult Url(string url)
         {
             var _url = (from u in db.Url where u.shortUrl == url select u).First();
 
@@ -43,7 +45,7 @@ namespace WebAPI.Controllers
                 Click = record.Clicked,
                 byDate = record.ByDate,
                 byMonth = record.ByMonth,
-                byYear = record.ByMonth
+                byYear = record.ByYear
             };
 
             return Ok(recordToSend);
@@ -53,6 +55,30 @@ namespace WebAPI.Controllers
         public IActionResult Track(string url)
         {
             return Ok(url);
+        }
+
+        [Authorize]
+        [HttpGet("user")]
+        public IActionResult GetUser()
+        {
+            var token = Request.Headers["Authorization"];
+            token = token.ToString().Substring(7);
+
+            var user = GetUserByToken(token);
+
+            var urls = from u in db.Url where u.Owner == user select u;
+
+            return Ok(urls);
+        }
+
+        public User GetUserByToken(string token)
+        {
+            var jwtSecrTokenHandler = new JwtSecurityTokenHandler();
+            var secrToken = jwtSecrTokenHandler.ReadToken(token) as JwtSecurityToken;
+
+            var userId = secrToken?.Claims.First(claim => claim.Type == "sub").Value;
+
+            return db.User.Find(Guid.Parse(userId));
         }
     }
 }

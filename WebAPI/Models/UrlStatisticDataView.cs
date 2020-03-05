@@ -31,7 +31,7 @@ namespace WebAPI.Models
             var rec = from x in urls
                         group x by x.IpAddress into g
                         let count = g.Count()
-                        orderby count descending
+                        orderby count ascending
                         select new Track{ IP = g.Key, Count = count };
 
             Clicked = rec.ToList();
@@ -42,8 +42,8 @@ namespace WebAPI.Models
             var rec = from x in urls
                         group x by x.CreatedAt.Date into g
                         let count = g.Count()
-                        orderby count descending
-                        select new { label = g.Key.ToString(), value = count };
+                        orderby g.Key ascending
+                        select new { label = g.Key.ToString("yy/MM/dd"), value = count };
 
             var record = new ByTime();
             record.Label = (from l in rec select l.label).ToList();
@@ -57,8 +57,10 @@ namespace WebAPI.Models
             var rec = from x in urls
                       group x by x.CreatedAt.Month into g
                       let count = g.Count()
-                      orderby count descending
+                      orderby g.Key ascending
                       select new { label = g.Key.ToString(), value = count };
+
+
 
             var record = new ByTime();
             record.Label = (from l in rec select l.label).ToList();
@@ -72,7 +74,7 @@ namespace WebAPI.Models
             var rec = from x in urls
                       group x by x.CreatedAt.Year into g
                       let count = g.Count()
-                      orderby count descending
+                      orderby g.Key ascending
                       select new { label = g.Key.ToString(), value = count };
 
             var record = new ByTime();

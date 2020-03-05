@@ -81,13 +81,13 @@ namespace WebAPI.Controllers
                 var existUsername = from n in existUser select n.Username;
                 if (existUsername.Contains(user.Username))
                 {
-                    return Ok(ERR);
+                    return BadRequest("Username/Password already exist");
                 }
 
                 var existEmail = from e in existUser select e.Email;
                 if (existUsername.Contains(user.Username))
                 {
-                    return Ok(ERR);
+                    return BadRequest("Username/Password already exist");
                 }
 
                 user.Created_at = DateTime.Now;
@@ -98,7 +98,7 @@ namespace WebAPI.Controllers
             }
 
             else
-                return Ok(ERR);
+                return BadRequest("Username/Password already exist");
         }
 
         private bool validateRegisterUserForm(User user)

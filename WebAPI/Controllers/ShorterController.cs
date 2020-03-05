@@ -92,7 +92,7 @@ namespace WebAPI.Controllers
                 db.Url.Add(_url);
                 db.SaveChanges();
 
-                _url.shortUrl = "https://localhost:5001/" + _url.shortUrl;
+                _url.shortUrl = "https://192.168.17.108:5001/" + _url.shortUrl;
 
                 return Ok(_url);
             }

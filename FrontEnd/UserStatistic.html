@@ -14,11 +14,12 @@
     <nav class="flex items-center justify-between flex-wrap bg-purple-500 p-6">
         <div class="flex items-center flex-shrink-0 text-white mr-6">
           <img class="fill-current h-8 w-8 mr-2" width="54" height="54" viewBox="0 0 54 54" src="statics/logo.svg"></img>
-          <a href="Index.html" class="font-semibold text-xl tracking-tight">Pemendek URL</a>
+          <a href="http://localhost:8080" class="font-semibold text-xl tracking-tight">Pemendek URL</a>
         </div>
           <div id="login-logout">
-            <a href="" class="modal-open inline-block text-sm px-4 py-2 leading-none border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white mt-4 lg:mt-0">Login</a>
+            <a href="javascript: Logout()" class="modal-open inline-block text-sm px-4 py-2 leading-none border rounded text-white border-white hover:border-transparent hover:text-teal-500 hover:bg-white mt-4 lg:mt-0">Logout</a>
           </div>
+        </div>
       </nav>
       <div class="">
           <div id="url-list" class="w-3/5">
@@ -54,28 +55,39 @@
 var DetailData;
 
 $(document).ready(function(){
-    $.ajax({
-            url: 'https://192.168.17.108:5001/api/statistic',
+    var token = Cookies.get('token');
+
+    if(token == null)
+        window.location.href = 'http://localhost:8080';
+
+    else{
+        token = 'Bearer ' + token;
+        $.ajax({
+            url: 'https://192.168.17.108:5001/api/statistic/user',
             type: 'get',
             dataType: 'json',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Authorization', token);
+            }
         }).done(function(data){
             console.log(data);
 
             for(i=0; i<data.length; i++){
                 var shortUrl = '<a href="javascript: generateDetail(\''+data[i].shortUrl+'\')">'+ data[i].shortUrl +'</a>';
                 var tableContent = '<tr>'+
-                    '<td class="border px-4 py-2">'+ (i+1) +'</td>'+
+                    '<td class="border px-4 py-2">'+ i+1 +'</td>'+
                     '<td class="border px-4 py-2">'+ shortUrl +'</td>'+
                     '<td class="border px-4 py-2">'+ data[i].originalUrl +'</td>'+
-                  '</tr>';
+                '</tr>';
                 
-                  $('#t-ip-body').append(tableContent);
+                $('#t-ip-body').append(tableContent);
             }
-              
+            
         }).catch(function(err){
             console.log(err);
             //window.location.href = 'http://localhost:8080';
         });
+    }
 })
 
 function generateDetail(ID){
@@ -122,7 +134,7 @@ function generateInfo(data){
 
     for(i=0; i<data.length; i++){
         var tableContent = '<tr>'+
-                            '<td class="border px-4 py-2">'+ (i+1) +'</td>'+
+                            '<td class="border px-4 py-2">'+ i+1 +'</td>'+
                             '<td class="border px-4 py-2">'+ data[i].ip +'</td>'+
                             '<td class="border px-4 py-2">'+ data[i].count +'x</td>'+
                             '</tr>';
@@ -203,5 +215,10 @@ function generateGraph(label, value){
             }
         }
     });
+}
+
+function Logout(){
+    Cookies.remove('token');
+    window.location.href = 'http://localhost:8080';
 }
 </script>
